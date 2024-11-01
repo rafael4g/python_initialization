@@ -144,6 +144,7 @@ MYSQL_USER = config('MYSQL_USER')
 MYSQL_PASS = config('MYSQL_PASS')
 MYSQL_HOST = config('MYSQL_HOST')
 MYSQL_PORT = config('MYSQL_PORT')
+PATH_BUCKET = config('PATH_BUCKET')
 ENV_BRONZE = config('ENV_BRONZE')
 DUCKDB_DATABASE = config('DUCKDB_DATABASE')
 
@@ -201,6 +202,17 @@ def handle_ymonth(_dt: datetime) -> int:
     s_ymonth = (s_year * 100 + s_month)
     return s_ymonth                                                        
 
+def convert_datetime_to_timestamp_unix(_date: str) -> int:
+    # -- convert_datetime_to_timestamp_unix    
+	_date_datetime = datetime.strptime(_date, '%Y-%m-%d %H:%M')
+	_data_unix = int(_date_datetime.timestamp())    
+	return _data_unix
+
+def convert_timestamp_unix_to_datetime(_date: str) -> int:
+    # -- convert_timestamp_unix_to_datetime    
+	_date_datetime = datetime.fromtimestamp(_date)    
+	return _date_datetime
+                            
 if __name__ == '__main__':
     print('Tested!')
 
@@ -214,6 +226,7 @@ if __name__ == '__main__':
         with open(init_file_env, 'w') as init_file_env:
             init_file_env.write("""\
 PATH_ROOT=./src
+PATH_BUCKET=./src/bucket
 ENV_BRONZE=./src/bucket/bronze
 MYSQL_USER=usuario
 MYSQL_PASS=password

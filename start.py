@@ -8,6 +8,7 @@ def criar_pasta_template(base_path):
         "src",        
         "src/utils",
         "src/database",
+        "src/extensions/v1.1.3/windows_amd64",
         ".vscode",
         "src/bucket/bronze",
         "src/bucket/bronze/csv",
@@ -25,10 +26,16 @@ def criar_pasta_template(base_path):
         print(f'Criado: {caminho_completo}') 
 
     # Criar e adicionar conteúdo ao arquivo src/bucket/bronze/csv/.gitkeep
+    init_file_bucket_extensions = os.path.join(base_path, "src/extensions/v1.1.3/windows_amd64/.gitkeep")
+    if not os.path.exists(init_file_bucket_extensions):
+        with open(init_file_bucket_extensions, 'w') as init_file:
+            init_file.write("""""")   
+
+    # Criar e adicionar conteúdo ao arquivo src/bucket/bronze/csv/.gitkeep
     init_file_bucket_bronze_csv = os.path.join(base_path, "src/bucket/bronze/csv/.gitkeep")
     if not os.path.exists(init_file_bucket_bronze_csv):
         with open(init_file_bucket_bronze_csv, 'w') as init_file:
-            init_file.write("""""")   
+            init_file.write("""""")             
 
     # Criar e adicionar conteúdo ao arquivo src/bucket/bronze/excel/.gitkeep
     init_file_bucket_bronze_excel = os.path.join(base_path, "src/bucket/bronze/excel/.gitkeep")
@@ -145,6 +152,7 @@ MYSQL_PASS = config('MYSQL_PASS')
 MYSQL_HOST = config('MYSQL_HOST')
 MYSQL_PORT = config('MYSQL_PORT')
 PATH_BUCKET = config('PATH_BUCKET')
+PATH_EXTENSIONS = config('PATH_EXTENSIONS')
 ENV_BRONZE = config('ENV_BRONZE')
 DUCKDB_DATABASE = config('DUCKDB_DATABASE')
 
@@ -227,6 +235,7 @@ if __name__ == '__main__':
             init_file_env.write("""\
 PATH_ROOT=./src
 PATH_BUCKET=./src/bucket
+PATH_EXTENSIONS=./src/extensions
 ENV_BRONZE=./src/bucket/bronze
 MYSQL_USER=usuario
 MYSQL_PASS=password
@@ -329,6 +338,9 @@ pd.set_option('display.max_rows',None)
 
 con = duckdb.connect(utils.DUCKDB_DATABASE) # type: ignore
 con.execute('CREATE SCHEMA IF NOT EXISTS s1')
+
+con.execute(f"SET extension_directory = '{utils.PATH_EXTENSIONS}';")
+con.load_extensios(f'{utils.PATH_EXTENSIONS}/v1.1.3/windows_amd64/spatial.duckdb_extension')
 
 file_parquet = ''.join(f'{utils.ENV_BRONZE}/files*.parquet')                                        
 """),

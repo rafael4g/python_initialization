@@ -53,6 +53,8 @@ O script cria a seguinte estrutura de diretórios:
 Um arquivo `.env` é gerado automaticamente com as seguintes variáveis:
 
 PATH_ROOT=./src \
+PATH_BUCKET=./src/bucket \
+PATH_EXTENSIONS=./src/extensions \
 ENV_BRONZE=./src/bucket/bronze \
 MYSQL_USER=usuario \
 MYSQL_PASS=password \
@@ -90,6 +92,17 @@ O script também cria um notebook `duckdb_local.ipynb`, que inicia uma conexão 
     ```
 
 Isso criará a estrutura de pastas, arquivos e o notebook.
+
+4. Extensões para Duckdb
+   - baixe conforme sua versão, neste projeto v1.1.3
+   ```bash
+   # baixe o zip no site abaixo
+   http://extensions.duckdb.org/v1.1.3/windows_amd64/spatial.duckdb_extension.gz
+
+   # Ou Instale diretamente com o comando abaixo, direto da celula do notebook
+   con.execute('INSTALL spatial')
+   con.execute('LOAD spatial')
+   ```
 
 4. Abra o notebook duckdb_local.ipynb no Jupyter e execute as células para manipulação do banco de dados DuckDB.
 

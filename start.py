@@ -140,6 +140,7 @@ def update_table(_name_table: str, _limit: int =10) -> str: ...
     if not os.path.exists(init_file_path):
         with open(init_file_path, 'w') as init_file:
             init_file.write("""\
+from typing import List
 from sqlalchemy import create_engine
 from unicodedata import normalize
 from datetime import datetime
@@ -148,6 +149,7 @@ import hashlib
 from decouple import config
 
 MYSQL_USER = config('MYSQL_USER')
+PATH_API = config('PATH_API')
 MYSQL_PASS = config('MYSQL_PASS')
 MYSQL_HOST = config('MYSQL_HOST')
 MYSQL_PORT = config('MYSQL_PORT')
@@ -155,8 +157,10 @@ PATH_BUCKET = config('PATH_BUCKET')
 PATH_EXTENSIONS = config('PATH_EXTENSIONS')
 ENV_BRONZE = config('ENV_BRONZE')
 DUCKDB_DATABASE = config('DUCKDB_DATABASE')
+                            
+DATETIME_HOUR_MINUTES = datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S")
 
-def handle_conect_db(_mysql_db_name: str):
+def handle_conect_db(_mysql_db_name: str) -> create_engine:
     # -- handle_conect_db
     engine = create_engine(f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASS}@{MYSQL_HOST}:{MYSQL_PORT}/{_mysql_db_name}')
     return engine
@@ -221,6 +225,14 @@ def convert_timestamp_unix_to_datetime(_date: str) -> int:
 	_date_datetime = datetime.fromtimestamp(_date)    
 	return _date_datetime
                             
+def handle_divide_into_groups(_list, _group_size) -> List[str]:
+    group = [_list[i:i + _group_size] for i in range(0, len(_list), _group_size)]
+    return group      
+
+def handle_divide_into_groups(_list, _group_size) -> List[str]:
+    group = [_list[i:i + _group_size] for i in range(0, len(_list), _group_size)]
+    return group                                                  
+                            
 if __name__ == '__main__':
     print('Tested!')
 
@@ -234,6 +246,7 @@ if __name__ == '__main__':
         with open(init_file_env, 'w') as init_file_env:
             init_file_env.write("""\
 PATH_ROOT=./src
+PATH_API=
 PATH_BUCKET=./src/bucket
 PATH_EXTENSIONS=./src/extensions
 ENV_BRONZE=./src/bucket/bronze

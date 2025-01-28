@@ -1,0 +1,88 @@
+{
+	// Snippets desenvolvidos para DuckDb-Local
+    // ...
+	"Duckdb to export": {
+		"prefix": "d_export",
+		"body": [
+			"con.execute(f\"copy s1.tbl_selected to './src/data/tbl_selected.parquet' (format 'parquet', CODEC 'zstd')\")",			
+		],
+		"description": "Export table to parquet"
+	},		
+	"Duckdb to create table": {
+		"prefix": "d_create",
+		"body": [
+			"q=f\"\"\"",
+			"drop table if exists s1.nome_table;",
+			"create table s1.nome_table as select * from '{ nome_table }'",
+			"\"\"\"",
+			"con.execute(q)",
+		],
+		"description": "Create table to DuckDb"
+	},	
+	"Duckdb Execute": {
+		"prefix": "d_execute",
+		"body": [			
+			"con.execute(q)",			
+		],
+		"description": "Execute Duckdb"
+	},		
+	"Duckdb Show Tables": {
+		"prefix": "d_tables",
+		"body": [			
+			"con.execute('select * from duckdb_tables()').df()",			
+		],
+		"description": "Show Tables"
+	},		
+	"Duckdb Describe Table": {
+		"prefix": "d_describe",
+		"body": [			
+			"q=f\"\"\"",
+			"describe s1.table_name",			
+			"\"\"\"",
+			"con.execute(q).fetch_df()",
+		],
+		"description": "Describe Table"
+	},	
+	"Duckdb Samples Query": {
+		"prefix": "d_query",
+		"body": [			
+			"q=f\"\"\"",
+			"select * from s1.table_name",
+			"where 1=1",
+			"-- and criterio",
+			"limit 2",
+			"\"\"\"",
+			"con.execute(q).fetch_df().T",
+		],
+		"description": "Select rows limit 2"
+	},
+	"Duckdb df to MYSQL": {
+		"prefix": "d_upload",
+		"body": [			
+			"# conection mysql",
+			"engine = utils.handle_connect_db('db_historico')",
+			"",
+			"# create dataframe",
+			"df_load= con.execute('from s1.table_name').df()",
+			"",
+			"df_load.to_sql(",
+			"\tname='table_name',",
+			"\tcon=engine,",
+			"\tindex=False,",
+			"\tif_exists='append',",
+			"\tchunksize=100_000",
+			")",
+			"",
+			"engine.dispose()",
+		],
+		"description": "Create Dataframe"
+	},
+	"Duckdb Vacuum Analyse": {
+		"prefix": "d_vacuum",
+		"body": [			
+			"con.execute('vacuum analyse')",
+			"con.close()",		
+		],
+		"description": "Vacuum and Close Connection"
+	},
+}

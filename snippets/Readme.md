@@ -45,6 +45,18 @@ Na pasta snippets deste repositório, copie o conteudo de python.json e cole.
 Os trechos de código devem estar entre aspas e separados por vírgulas.
 - O campo _"description"_ é uma simples descrição do comando.
 
+### Atalhos Criados:
+
+- d_export: seleciona uma tabela e exporta em formato.parquet.
+- d_create: cria uma tabela.
+- d_execute: Ação de executar uma query.
+- d_tables: Semelhante a show tables.
+- d_describe: descrição de uma tabela.
+- d_query: Query inicial, com limit 2, e formato tabular.
+- d_upload: Para inclusão de uma tabela do DuckDb para Mysql.
+- d_vacuum: reorganização de indexão e fechamento de conexão com DuckDb.
+
+---
 
 Espero ter ajudado. ❤
 

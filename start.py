@@ -227,11 +227,7 @@ def convert_timestamp_unix_to_datetime(_date: str) -> int:
                             
 def handle_divide_into_groups(_list, _group_size) -> List[str]:
     group = [_list[i:i + _group_size] for i in range(0, len(_list), _group_size)]
-    return group      
-
-def handle_divide_into_groups(_list, _group_size) -> List[str]:
-    group = [_list[i:i + _group_size] for i in range(0, len(_list), _group_size)]
-    return group                                                  
+    return group                              
                             
 if __name__ == '__main__':
     print('Tested!')

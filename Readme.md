@@ -60,6 +60,7 @@ MYSQL_USER=usuario \
 MYSQL_PASS=password \
 MYSQL_HOST=localhost \
 MYSQL_PORT=3306 \
+MYSQL_DEFAULT_DB=information_schema\
 DUCKDB_DATABASE=./src/database/db_local.duckdb
 
 

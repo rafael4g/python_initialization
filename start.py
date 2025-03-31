@@ -141,7 +141,7 @@ def update_table(_name_table: str, _limit: int =10) -> str: ...
         with open(init_file_path, 'w') as init_file:
             init_file.write("""\
 from typing import List
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from unicodedata import normalize
 from datetime import datetime
 import re
@@ -153,6 +153,7 @@ PATH_API = config('PATH_API')
 MYSQL_PASS = config('MYSQL_PASS')
 MYSQL_HOST = config('MYSQL_HOST')
 MYSQL_PORT = config('MYSQL_PORT')
+MYSQL_DEFAULT_DB = config('MYSQL_DEFAULT_DB')
 PATH_BUCKET = config('PATH_BUCKET')
 PATH_EXTENSIONS = config('PATH_EXTENSIONS')
 ENV_BRONZE = config('ENV_BRONZE')
@@ -228,7 +229,42 @@ def convert_timestamp_unix_to_datetime(_date: str) -> int:
 def handle_divide_into_groups(_list, _group_size) -> List[str]:
     group = [_list[i:i + _group_size] for i in range(0, len(_list), _group_size)]
     return group                              
-                            
+
+# Check se nao existe o Database
+def create_db_or_connect(db_name: str):
+    # -- Verifica se o banco de dados existe e, se nao, cria.
+    
+    engine = handle_conect_db(MYSQL_DEFAULT_DB)
+    
+    with engine.connect() as conn:
+        # Verifica se o banco existe
+        result = conn.execute(f"SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{db_name}'").fetchone()
+
+        if result:
+            print(f"Banco de dados '{db_name}' ja existe.")
+        else:
+            print(f"Banco de dados '{db_name}' nao encontrado. Criando...")
+            conn.execute(f"CREATE DATABASE {db_name}")
+            print(f"Banco de dados '{db_name}' criado com sucesso!")
+
+    # Retorna conexão com o banco criado
+    return handle_conect_db(db_name)
+
+def execute_sql_commands(sql_file, db_name: str):
+    # -- execute_sql_commands
+    engine = handle_conect_db(db_name)
+    
+    with open(sql_file, db_name, "r", encoding="utf-8") as f:
+        sql_script = f.read()
+            
+    comandos = sql_script.split(";")
+
+    with engine.connect() as conn:
+        for comando in comandos:
+            comando = comando.strip() 
+            if comando:
+                conn.execute(text(comando))
+
 if __name__ == '__main__':
     print('Tested!')
 
@@ -250,6 +286,7 @@ MYSQL_USER=usuario
 MYSQL_PASS=password
 MYSQL_HOST=localhost
 MYSQL_PORT=3306
+MYSQL_DEFAULT_DB=information_schema
 DUCKDB_DATABASE=./src/database/db_local.duckdb
 
 """)
@@ -349,8 +386,8 @@ pd.set_option('display.max_rows',None)
 con = duckdb.connect(utils.DUCKDB_DATABASE) # type: ignore
 con.execute('CREATE SCHEMA IF NOT EXISTS s1')
 
-con.execute(f"SET extension_directory = '{utils.PATH_EXTENSIONS}';")
-con.load_extensios(f'{utils.PATH_EXTENSIONS}/v1.1.3/windows_amd64/spatial.duckdb_extension')
+#con.execute(f"SET extension_directory = '{utils.PATH_EXTENSIONS}';")
+#con.load_extensios(f'{utils.PATH_EXTENSIONS}/v1.1.3/windows_amd64/spatial.duckdb_extension')
 
 file_parquet = ''.join(f'{utils.ENV_BRONZE}/files*.parquet')                                        
 """),

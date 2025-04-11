@@ -236,7 +236,7 @@ def create_db_or_connect(db_name: str):
     
     engine = handle_conect_db(MYSQL_DEFAULT_DB)
     
-    with engine.connect() as conn:
+    with engine.conect() as conn:
         # Verifica se o banco existe
         result = conn.execute(f"SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{db_name}'").fetchone()
 
@@ -368,6 +368,7 @@ DUCKDB_DATABASE=./src/database/db_local.duckdb
         nbf.v4.new_markdown_cell("### Start notebook with DuckDb"),
         nbf.v4.new_code_cell("""
 # Init Notebook
+import os                             
 import src.utils as utils                  # configs and functions
 import src.models.marts as mql             # marts options
 import src.models.sources as soql          # sources options

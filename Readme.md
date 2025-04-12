@@ -84,7 +84,7 @@ O script também cria um notebook `duckdb_local.ipynb`, que inicia uma conexão 
 1. Clone este repositório.
 2. Instale as dependências (caso necessário):
    ```bash
-   pip install nbformat openpyxl sqlalchemy python-decouple pandas duckdb
+   pip install nbformat openpyxl magic_duckdb sqlalchemy python-decouple pandas duckdb
    ```
 
 3. Execute o script Python:
@@ -94,7 +94,24 @@ O script também cria um notebook `duckdb_local.ipynb`, que inicia uma conexão 
 
 Isso criará a estrutura de pastas, arquivos e o notebook.
 
-4. Extensões para Duckdb
+4. Magic DuckDB
+   - Extenção para manipulação de sql utilizando a expressão %%dql no inicio da celula do notebook
+   - Utilizamos no próprio banco local com a flag `%%dql -co -con`
+      - `-co` para conexão em variavel de conexão ao banco de dados.
+      - `con` nossa variavel de conexão ao banco de dados local.
+
+   ```python
+   %%dql -co con 
+   select 
+      a.database_name
+      , a.table_name
+      , a.estimated_size
+      , a.column_count
+      , a.index_count
+   from duckdb_tables() a
+   ```
+
+5. Extensões para Duckdb
    - baixe conforme sua versão, neste projeto v1.1.3
    ```bash
    # baixe o zip no site abaixo
@@ -105,11 +122,11 @@ Isso criará a estrutura de pastas, arquivos e o notebook.
    con.execute('LOAD spatial')
    ```
 
-4. Abra o notebook duckdb_local.ipynb no Jupyter e execute as células para manipulação do banco de dados DuckDB.
+6. Abra o notebook duckdb_local.ipynb no Jupyter e execute as células para manipulação do banco de dados DuckDB.
 
 ## Requisitos
 - Python 3.7+
-- Pacotes: nbformat, openpyxl, sqlalchemy, decouple, pandas, duckdb
+- Pacotes: nbformat, openpyxl, magic_duckdb, sqlalchemy, decouple, pandas, duckdb
 
 ## Contribuição
 Sinta-se à vontade para abrir um Pull Request ou sugerir melhorias para o projeto.

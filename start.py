@@ -376,6 +376,7 @@ import src.models.staging.query as qsql    # staging query
 import src.models.staging.update as update # staging update
 import src.models.staging.create as create # staging create
 import duckdb
+import magic_duckdb 
 import pandas as pd
 import warnings
                         
@@ -390,11 +391,23 @@ con.execute('CREATE SCHEMA IF NOT EXISTS s1')
 #con.execute(f"SET extension_directory = '{utils.PATH_EXTENSIONS}';")
 #con.load_extensios(f'{utils.PATH_EXTENSIONS}/v1.1.3/windows_amd64/spatial.duckdb_extension')
 
-file_parquet = ''.join(f'{utils.ENV_BRONZE}/files*.parquet')                                        
+file_parquet = ''.join(f'{utils.ENV_BRONZE}/files*.parquet') 
+%load_ext magic_duckdb                                         
 """),
     nbf.v4.new_code_cell(f"""
 con.execute('drop table if exists s1.tbl_file_parquet')
 con.execute(f"create table s1.tbl_file_parquet as select * from '{{file_parquet}}' ")
+    """),
+    nbf.v4.new_code_cell(f"""
+#-- Utilizando Magic DuckDb
+%%dql -co con 
+select 
+    a.database_name
+    , a.table_name
+    , a.estimated_size
+    , a.column_count
+    , a.index_count
+from duckdb_tables() a
     """),
     nbf.v4.new_code_cell("print('Continue....')")
     ]

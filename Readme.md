@@ -92,7 +92,7 @@ O script também cria um notebook `duckdb_local.ipynb`, que inicia uma conexão 
     python start.py
     ```
 
-Isso criará a estrutura de pastas, arquivos e o notebook.
+   - Isso criará a estrutura de pastas, arquivos e o notebook.
 
 4. Magic DuckDB
    - Extenção para manipulação de sql utilizando a expressão %%dql no inicio da celula do notebook

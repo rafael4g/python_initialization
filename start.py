@@ -338,7 +338,14 @@ DUCKDB_DATABASE=./src/database/db_local.duckdb
     "zenMode.fullScreen": false,
     "zenMode.centerLayout": false,
     "zenMode.hideLineNumbers": false,
-    // =================== CONFIG: extensão material icon theme ===================
+    // =================== CONFIG: extensão material icon file ===================
+    "material-icon-theme.folders.associations": {
+        "*.parquet": "regedit",
+        "*.xlsb": "table",                           
+        "*.sql": "parcel",                
+        "*.jpg": "luau",            
+    },
+    // =================== CONFIG: extensão material icon folder ===================
     "material-icon-theme.folders.associations": {
         // bucket-folder
         "bucket": "scala",

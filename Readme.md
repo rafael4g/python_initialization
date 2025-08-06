@@ -8,6 +8,7 @@ Este projeto contém um script para a criação automática de uma estrutura de 
 - Cria arquivos `.gitkeep` e `__init__.py` nos diretórios necessários para manter a estrutura de diretórios em sistemas de controle de versão.
 - Gera um arquivo `.env` com variáveis de ambiente, como credenciais do MySQL e caminho do banco de dados DuckDB.
 - Configura o editor com preferências no arquivo `.vscode/settings.json`.
+- Como indicação, instale a extensão do VSCODE Material Icon Theme `EXTENSÃO VSCODE`.
 - Cria um notebook (`duckdb_local.ipynb`) para interação com um banco de dados local DuckDB.
 
 ## Como utilizar

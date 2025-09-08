@@ -145,6 +145,7 @@ from sqlalchemy import create_engine, text
 from unicodedata import normalize
 from datetime import datetime
 import re
+import os
 import hashlib
 from decouple import config
 
@@ -161,6 +162,16 @@ DUCKDB_DATABASE = config('DUCKDB_DATABASE')
                             
 DATETIME_HOUR_MINUTES = datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S")
 
+def check_folder_exists(path_check: str) -> str:
+    # -- Criar pasta se não existe
+
+    if not os.path.exists(path_check):
+        os.makedirs(path_check)
+        response = 'Pasta criada!'    
+    else:
+        response = 'Pasta já existe.'
+    return response
+     
 def handle_conect_db(_mysql_db_name: str) -> create_engine:
     # -- handle_conect_db
     engine = create_engine(f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASS}@{MYSQL_HOST}:{MYSQL_PORT}/{_mysql_db_name}')

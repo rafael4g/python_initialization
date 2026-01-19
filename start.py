@@ -11,8 +11,6 @@ def criar_pasta_template(base_path):
         "src/database",
         ".vscode",
         "src/bucket/bronze",
-        "src/bucket/bronze/csv",
-        "src/bucket/bronze/excel",
         "src/bucket/silver",
         "src/bucket/gold"
     ]
@@ -20,21 +18,14 @@ def criar_pasta_template(base_path):
     for pasta in estrutura_pastas:
         caminho_completo = os.path.join(base_path, pasta)
         os.makedirs(caminho_completo, exist_ok=True)
-        print(f'Criado: {caminho_completo}') 
+        print(f'Criado: {caminho_completo}')        
 
-   
-    # Criar e adicionar conteúdo ao arquivo src/bucket/bronze/csv/.gitkeep
-    init_file_bucket_bronze_csv = os.path.join(base_path, "src/bucket/bronze/csv/.gitkeep")
-    if not os.path.exists(init_file_bucket_bronze_csv):
-        with open(init_file_bucket_bronze_csv, 'w') as init_file:
-            init_file.write("""""")             
-
-    # Criar e adicionar conteúdo ao arquivo src/bucket/bronze/excel/.gitkeep
-    init_file_bucket_bronze_excel = os.path.join(base_path, "src/bucket/bronze/excel/.gitkeep")
-    if not os.path.exists(init_file_bucket_bronze_excel):
-        with open(init_file_bucket_bronze_excel, 'w') as init_file:
-            init_file.write("""""")              
-
+    # Criar e adicionar conteúdo ao arquivo src/bucket/bronze/.gitkeep
+    init_file_bucket_silver = os.path.join(base_path, "src/bucket/bronze/.gitkeep")
+    if not os.path.exists(init_file_bucket_silver):
+        with open(init_file_bucket_silver, 'w') as init_file:
+            init_file.write("""""")  
+            
     # Criar e adicionar conteúdo ao arquivo src/bucket/silver/.gitkeep
     init_file_bucket_silver = os.path.join(base_path, "src/bucket/silver/.gitkeep")
     if not os.path.exists(init_file_bucket_silver):
@@ -74,33 +65,35 @@ import hashlib
 from decouple import config
 
 MYSQL_USER = config('MYSQL_USER')
-PATH_API = config('PATH_API')
 MYSQL_PASS = config('MYSQL_PASS')
 MYSQL_HOST = config('MYSQL_HOST')
 MYSQL_PORT = config('MYSQL_PORT')
-MYSQL_DEFAULT_DB = config('MYSQL_DEFAULT_DB')
 PATH_BUCKET = config('PATH_BUCKET')
-PATH_EXTENSIONS = config('PATH_EXTENSIONS')
 ENV_BRONZE = config('ENV_BRONZE')
+ENV_SILVER = config('ENV_SILVER')
+ENV_GOLD = config('ENV_GOLD')
 DUCKDB_DATABASE = config('DUCKDB_DATABASE')
                             
 DATETIME_HOUR_MINUTES = datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S")
 
+# verifica se exite pasta, do contrario cria a pasta
 def check_folder_exists(path_check: str) -> str:
-    # -- Criar pasta se não existe
+    # -- Criar pasta se nao existe
 
     if not os.path.exists(path_check):
         os.makedirs(path_check)
         response = 'Pasta criada!'    
     else:
-        response = 'Pasta já existe.'
+        response = 'Pasta ja existe.'
     return response
-     
+
+# funcao para conexao com mysql( usada para desenvolvimento ) 
 def handle_conect_db(_mysql_db_name: str) -> create_engine:
     # -- handle_conect_db
     engine = create_engine(f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASS}@{MYSQL_HOST}:{MYSQL_PORT}/{_mysql_db_name}')
     return engine
 
+# remove objetos invisiveis no texto, e cria saida em formato md5
 def handle_strip_string(str1_in: str) -> str:
     # -- Função para remover objetos de strings
     # -- str1_in: string de entrada
@@ -111,8 +104,11 @@ def handle_strip_string(str1_in: str) -> str:
     hash_string_stripped = hashlib.md5(strip_string.encode())
     return hash_string_stripped.hexdigest()
 
+# normaliza cabecalhos de dataframe, padrao, snake_case
 def handle_normalize_strings(in_string: str) -> str:
     # -- handle_normalize_strings
+    # -- Remove caracteres especiais, e replace nos caracteres .()/|-,
+                            
     target = normalize('NFKD', in_string).encode('ASCII','ignore').decode('ASCII')
     target = target.replace('.','')
     target = target.replace('(','')
@@ -124,9 +120,11 @@ def handle_normalize_strings(in_string: str) -> str:
     target = target.replace(' ','_')
     return target
 
+# convert formato de data, em datetime padrao americano: YYYY-MM-DD HH:MM:SS
 def handle_parse_dt(value, tipo_tz="America/Sao_Paulo"):
-	#Tenta converter para datetime (naive, ja no fuso local).
-    # função existente no processo de Airflow
+	# -- Converte para datetime (naive, ja no fuso local).
+    # -- funcao existente no processo de Airflow
+                            
 	if value is None:
 		return None
 	if isinstance(value, datetime):
@@ -135,13 +133,13 @@ def handle_parse_dt(value, tipo_tz="America/Sao_Paulo"):
 	if not s:
 		return None
 	for fmt in (
-		'%Y%m%d',
-		'%Y-%m-%d %H:%M:%S',
-		'%Y-%m-%dT%H:%M:%S',
-		'%Y-%m-%d',
-		'%d/%m/%Y %H:%M:%S',
-		'%d/%m/%Y %H:%M',
-		'%d/%m/%Y',
+		"%Y%m%d",
+		"%Y-%m-%d %H:%M:%S",
+		"%Y-%m-%dT%H:%M:%S",
+		"%Y-%m-%d",
+		"%d/%m/%Y %H:%M:%S",
+		"%d/%m/%Y %H:%M",
+		"%d/%m/%Y",
 	):
 		try:
 			return datetime.strptime(s, fmt)
@@ -152,14 +150,13 @@ def handle_parse_dt(value, tipo_tz="America/Sao_Paulo"):
                       
 # comparando e adcionando colunas faltantes ao dataset original
 def handle_headers_comparation(_header_list: List[str], _header_original: List[str]) -> List[str]:
-    ''' Função que adciona coluna faltante 
+    # Função que adciona coluna faltante 
+    #---
+    #`variables`:
 
-    ---
-    `variables`:
-
-    _header_list: lista com as nomenclatura padronizadas \n
-    _header_original: lista das colunas do DataFrame analizado
-    '''
+    #_header_list: lista com as nomenclatura padronizadas \n
+    #_header_original: lista das colunas do DataFrame analizado
+    
     header_fit_output = []
     for i in _header_list:
         if i in _header_original:
@@ -168,21 +165,22 @@ def handle_headers_comparation(_header_list: List[str], _header_original: List[s
             header_fit_output.append(i)
     return header_fit_output
 
+# criacao do formato YYYYMM
 def handle_ymonth(_dt: datetime) -> int:
     # -- handle_ymonth  
+    # com campo data cria-se formato de anomes, exemplo: 12/05/2022: 202205
     s_year = _dt.year
     s_month = _dt.month
     s_ymonth = (s_year * 100 + s_month)
     return s_ymonth                                                        
 
-
+# conversao de arquivo xml para pandas dataframe
 def parse_xml_records(xml_path: Path, record_tag: str) -> pd.DataFrame:
-    '''
-    Lê um XML com estrutura de <record_tag> contendo múltiplos <Field name="...">valor</Field>.
-    Retorna DataFrame com colunas = 'name' e valores = text.
-    '''
-    tree = ET.parse(xml_path)
+    # Lê um XML com estrutura de <record_tag> contendo múltiplos <Field name="...">valor</Field>.
+    # Retorna DataFrame com colunas = 'name' e valores = text.
     # Alguns arquivos têm raiz adicional; usamos findall diretamente.
+    
+    tree = ET.parse(xml_path)
     records = tree.findall(record_tag)
     data = []
     for rec in records:
@@ -194,14 +192,13 @@ def parse_xml_records(xml_path: Path, record_tag: str) -> pd.DataFrame:
             data.append(row)
     return pd.DataFrame(data)
 
-def save_to_parquet(df: pd.DataFrame, out_path: str):
-    """
-    Salva DataFrame em parquet.
-    """    
-    df.to_parquet(out_path, compression='snappy', engine='pyarrow')	                                                    
+# salva o pandas dataframe em .parquet, por isso a necessidade da lib pyarrow
+def save_to_parquet(df: pd.DataFrame, out_path: str) -> None:
+    # Salva DataFrame em parquet.
+    df.to_parquet(out_path, compression='snappy', engine='pyarrow')
 
 if __name__ == '__main__':
-    print('Tested!')
+    print('Teste - ok!')
 
 
 """)
@@ -309,25 +306,35 @@ DUCKDB_DATABASE=./src/database/db_local.duckdb
         nbf.v4.new_markdown_cell("### Start notebook with DuckDb"),
         nbf.v4.new_code_cell("""
 # Init Notebook
-import os                             
-import duckdb
-import src.utils as utils                  # configs and functions
-import magic_duckdb 
-import pandas as pd
-import warnings
+#-----------------------------------------------------------------------------------------------------------------------------------------
+# Aprendizado Extra: Convenções de Nomenclatura ( Naming Conventions )
+# snake_case: Todas as letras são minúsculas e as palavras são separadas por underline (_). Muito comum em Python e bancos de dados.
+# camelCase: A primeira letra é minúscula, mas a primeira letra de cada palavra subsequente é maiúscula (exemploCamelCase).
+# PascalCase: Semelhante ao camelCase, mas a primeira letra de todas as palavras é maiúscula (ExemploPascalCase). Muito usado para classes.
+# kebab-case: Todas as letras são minúsculas e as palavras são separadas por hífen (exemplo-kebab-case). Comum em URLs e CSS.
+# SCREAMING_SNAKE_CASE (ou Macro Case): Todas as letras maiúsculas, separadas por underline (EXEMPLO_SCREAMING). Comum para constantes. 
+#-----------------------------------------------------------------------------------------------------------------------------------------         
+# import magic_duckdb                         # lib para queries duckdb , adcional
+import os                                   # lib sistema operacional              
+import duckdb                               # lib duckdb, manipulação até 50gb
+import src.utils as utils                   # configs and functions
+import pandas as pd                         # lib para manipulação de dados até 10gb
+import warnings                             # lib para controle de warnings
                         
-warnings.filterwarnings('ignore')
-pd.set_option('display.max_columns',None)
-pd.set_option('display.max_colwidth', None) 
-pd.set_option('display.max_rows',None)
+warnings.filterwarnings('ignore')           # ignore warnings ( avisos ignorados )
+pd.set_option('display.max_columns',None)   # show para todas as colunas do dataframe/dataset
+pd.set_option('display.max_colwidth', None) # show para todos os textos na coluna do dataframe/dataset
+pd.set_option('display.max_rows',None)      # show para todas as linhas
 
+# TODO: criação de conexão duckdb.local, caso não exista cria-se um novo database
 con = duckdb.connect(utils.DUCKDB_DATABASE) # type: ignore
 
-
+# TODO: modelo de variavel para arquivos .parquet
 file_parquet = ''.join(f'{utils.ENV_BRONZE}/files*.parquet') 
 %load_ext magic_duckdb                                         
 """),
     nbf.v4.new_code_cell(f"""
+# modelo de drop e create table, baseado no arquivo .parquet
 con.execute('drop table if exists tbl_file_parquet')
 con.execute(f"create table tbl_file_parquet as select * from '{{file_parquet}}' ")
     """),

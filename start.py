@@ -4,20 +4,17 @@ import nbformat as nbf
 
 def criar_pasta_template(base_path):
     """ criar_pasta_template """
+
     estrutura_pastas = [
         "src",        
         "src/utils",
         "src/database",
-        "src/extensions/v1.1.3/windows_amd64",
         ".vscode",
         "src/bucket/bronze",
         "src/bucket/bronze/csv",
         "src/bucket/bronze/excel",
         "src/bucket/silver",
-        "src/bucket/gold",
-        "src/models/marts",
-        "src/models/sources",
-        "src/models/staging"
+        "src/bucket/gold"
     ]
 
     for pasta in estrutura_pastas:
@@ -25,12 +22,7 @@ def criar_pasta_template(base_path):
         os.makedirs(caminho_completo, exist_ok=True)
         print(f'Criado: {caminho_completo}') 
 
-    # Criar e adicionar conteúdo ao arquivo src/bucket/bronze/csv/.gitkeep
-    init_file_bucket_extensions = os.path.join(base_path, "src/extensions/v1.1.3/windows_amd64/.gitkeep")
-    if not os.path.exists(init_file_bucket_extensions):
-        with open(init_file_bucket_extensions, 'w') as init_file:
-            init_file.write("""""")   
-
+   
     # Criar e adicionar conteúdo ao arquivo src/bucket/bronze/csv/.gitkeep
     init_file_bucket_bronze_csv = os.path.join(base_path, "src/bucket/bronze/csv/.gitkeep")
     if not os.path.exists(init_file_bucket_bronze_csv):
@@ -66,74 +58,6 @@ def criar_pasta_template(base_path):
     if not os.path.exists(init_file_src):
         with open(init_file_src, 'w') as init_file:
             init_file.write("""""")
-
-    # Criar e adicionar conteúdo ao arquivo src/models/marts/__init__.py
-    init_file_marts = os.path.join(base_path, "src/models/marts/__init__.py")
-    if not os.path.exists(init_file_marts):
-        with open(init_file_marts, 'w') as init_file:
-            init_file.write("""""")
-    # Criar e adicionar conteúdo ao arquivo src/models/sources/__init__.py
-    init_file_sources = os.path.join(base_path, "src/models/sources/__init__.py")
-    if not os.path.exists(init_file_sources):
-        with open(init_file_sources, 'w') as init_file:
-            init_file.write("""""")
-    # Criar e adicionar conteúdo ao arquivo src/models/staging/__init__.py
-    init_file_staging = os.path.join(base_path, "src/models/staging/__init__.py")
-    if not os.path.exists(init_file_staging):
-        with open(init_file_staging, 'w') as init_file:
-            init_file.write("""""")
-
-    # Criar e adicionar conteúdo ao arquivo src/models/staging/query.py
-    init_file_staging_query = os.path.join(base_path, "src/models/staging/query.py")
-    if not os.path.exists(init_file_staging_query):
-        with open(init_file_staging_query, 'w') as init_file:
-            init_file.write("""\
-def query_select(_name_table: str, _limit: int =10) -> str:
-	# -- query_select.sql
-    query = f\"\"\"
-	with
-		cte_query_select as (
-            select *
-            from s1.{_name_table}
-            limit {_limit}
-        )
-            select * from cte_query_select
-    \"\"\"
-    return query
-""")
-
-    # Criar e adicionar conteúdo ao arquivo src/models/staging/create.py
-    init_file_staging_create = os.path.join(base_path, "src/models/staging/create.py")
-    if not os.path.exists(init_file_staging_create):
-        with open(init_file_staging_create, 'w') as init_file:
-            init_file.write("""\
-import pandas as pd
-                                                        
-def tbl_canais(path_filename: str) -> pd.DataFrame:
-    df_canais = pd.read_excel(path_filename, engine='openpyxl', sheet_name='Planilha1')
-    df_canais.rename(columns=lambda x: x.lower(),inplace=True)
-    df_canais.fillna(value='', inplace=True)
-    
-    return df_canais
-
-def tbl_expansao(path_filename: str) -> pd.DataFrame:
-    df_expansao = pd.read_excel(path_filename
-                                , engine='openpyxl'
-                                , sheet_name='default_1'
-                                , dtype={'COD_IBGE': int, 'QTD': int})
-    df_expansao.rename(columns=lambda x: x.lower(),inplace=True)
-    df_expansao.fillna(value='', inplace=True)
-    
-    return df_expansao 
-""")            
-
-    # Criar e adicionar conteúdo ao arquivo src/models/staging/update.py
-    init_file_staging_update = os.path.join(base_path, "src/models/staging/update.py")
-    if not os.path.exists(init_file_staging_update):
-        with open(init_file_staging_update, 'w') as init_file:
-            init_file.write("""
-def update_table(_name_table: str, _limit: int =10) -> str: ...
-""")
 
     # Criar e adicionar conteúdo ao arquivo src/utils/__init__.py
     init_file_path = os.path.join(base_path, "src/utils/__init__.py")
@@ -194,30 +118,55 @@ def handle_normalize_strings(in_string: str) -> str:
     target = target.replace('(','')
     target = target.replace(')','')
     target = target.replace('/','')
+    target = target.replace('|','_')
     target = target.replace('-','')
+    target = target.replace('.','_')
+    target = target.replace(' ','_')
     return target
 
+def handle_parse_dt(value, tipo_tz="America/Sao_Paulo"):
+	#Tenta converter para datetime (naive, ja no fuso local).
+    # função existente no processo de Airflow
+	if value is None:
+		return None
+	if isinstance(value, datetime):
+		return value.astimezone(ZoneInfo(tipo_tz)).replace(tzinfo=None) if value.tzinfo else value
+	s = str(value).strip()
+	if not s:
+		return None
+	for fmt in (
+		'%Y%m%d',
+		'%Y-%m-%d %H:%M:%S',
+		'%Y-%m-%dT%H:%M:%S',
+		'%Y-%m-%d',
+		'%d/%m/%Y %H:%M:%S',
+		'%d/%m/%Y %H:%M',
+		'%d/%m/%Y',
+	):
+		try:
+			return datetime.strptime(s, fmt)
+		except Exception:
+			pass
+	return None
+
+                      
 # comparando e adcionando colunas faltantes ao dataset original
-def handle_headers_comparation(header_list, header_original) -> list:
-    # -- handle_headers_comparation
-    new_list = []
-    for i in header_list:
-        if i in header_original:
+def handle_headers_comparation(_header_list: List[str], _header_original: List[str]) -> List[str]:
+    ''' Função que adciona coluna faltante 
+
+    ---
+    `variables`:
+
+    _header_list: lista com as nomenclatura padronizadas \n
+    _header_original: lista das colunas do DataFrame analizado
+    '''
+    header_fit_output = []
+    for i in _header_list:
+        if i in _header_original:
             pass
         else:
-            new_list.append(i)
-    return new_list
-
-def handle_without_zero(in_string: str) -> str:
-    # -- handle_without_zero
-    _str_in = str(in_string)
-    target = _str_in.replace('.0', '')
-    target = target.strip()
-    if target == '-3':
-        str_output = 0
-    else:
-        str_output = target
-    return str_output
+            header_fit_output.append(i)
+    return header_fit_output
 
 def handle_ymonth(_dt: datetime) -> int:
     # -- handle_ymonth  
@@ -226,55 +175,30 @@ def handle_ymonth(_dt: datetime) -> int:
     s_ymonth = (s_year * 100 + s_month)
     return s_ymonth                                                        
 
-def convert_datetime_to_timestamp_unix(_date: str) -> int:
-    # -- convert_datetime_to_timestamp_unix    
-	_date_datetime = datetime.strptime(_date, '%Y-%m-%d %H:%M')
-	_data_unix = int(_date_datetime.timestamp())    
-	return _data_unix
 
-def convert_timestamp_unix_to_datetime(_date: str) -> int:
-    # -- convert_timestamp_unix_to_datetime    
-	_date_datetime = datetime.fromtimestamp(_date)    
-	return _date_datetime
-                            
-def handle_divide_into_groups(_list, _group_size) -> List[str]:
-    group = [_list[i:i + _group_size] for i in range(0, len(_list), _group_size)]
-    return group                              
+def parse_xml_records(xml_path: Path, record_tag: str) -> pd.DataFrame:
+    '''
+    Lê um XML com estrutura de <record_tag> contendo múltiplos <Field name="...">valor</Field>.
+    Retorna DataFrame com colunas = 'name' e valores = text.
+    '''
+    tree = ET.parse(xml_path)
+    # Alguns arquivos têm raiz adicional; usamos findall diretamente.
+    records = tree.findall(record_tag)
+    data = []
+    for rec in records:
+        row = {}
+        for field in rec.findall("Field"):
+            name = field.attrib.get("name")
+            row[name] = field.text
+        if row:
+            data.append(row)
+    return pd.DataFrame(data)
 
-# Check se nao existe o Database
-def create_db_or_connect(db_name: str):
-    # -- Verifica se o banco de dados existe e, se nao, cria.
-    
-    engine = handle_conect_db(MYSQL_DEFAULT_DB)
-    
-    with engine.conect() as conn:
-        # Verifica se o banco existe
-        result = conn.execute(f"SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{db_name}'").fetchone()
-
-        if result:
-            print(f"Banco de dados '{db_name}' ja existe.")
-        else:
-            print(f"Banco de dados '{db_name}' nao encontrado. Criando...")
-            conn.execute(f"CREATE DATABASE {db_name}")
-            print(f"Banco de dados '{db_name}' criado com sucesso!")
-
-    # Retorna conexão com o banco criado
-    return handle_conect_db(db_name)
-
-def execute_sql_commands(sql_file, db_name: str):
-    # -- execute_sql_commands
-    engine = handle_conect_db(db_name)
-    
-    with open(sql_file, db_name, "r", encoding="utf-8") as f:
-        sql_script = f.read()
-            
-    comandos = sql_script.split(";")
-
-    with engine.connect() as conn:
-        for comando in comandos:
-            comando = comando.strip() 
-            if comando:
-                conn.execute(text(comando))
+def save_to_parquet(df: pd.DataFrame, out_path: str):
+    """
+    Salva DataFrame em parquet.
+    """    
+    df.to_parquet(out_path, compression='snappy', engine='pyarrow')	                                                    
 
 if __name__ == '__main__':
     print('Tested!')
@@ -289,15 +213,14 @@ if __name__ == '__main__':
         with open(init_file_env, 'w') as init_file_env:
             init_file_env.write("""\
 PATH_ROOT=./src
-PATH_API=
 PATH_BUCKET=./src/bucket
-PATH_EXTENSIONS=./src/extensions
 ENV_BRONZE=./src/bucket/bronze
+ENV_SILVER=./src/bucket/silver
+ENV_GOLD=./src/bucket/gold
 MYSQL_USER=usuario
 MYSQL_PASS=password
 MYSQL_HOST=localhost
 MYSQL_PORT=3306
-MYSQL_DEFAULT_DB=information_schema
 DUCKDB_DATABASE=./src/database/db_local.duckdb
 
 """)
@@ -387,13 +310,8 @@ DUCKDB_DATABASE=./src/database/db_local.duckdb
         nbf.v4.new_code_cell("""
 # Init Notebook
 import os                             
-import src.utils as utils                  # configs and functions
-import src.models.marts as mql             # marts options
-import src.models.sources as soql          # sources options
-import src.models.staging.query as qsql    # staging query
-import src.models.staging.update as update # staging update
-import src.models.staging.create as create # staging create
 import duckdb
+import src.utils as utils                  # configs and functions
 import magic_duckdb 
 import pandas as pd
 import warnings
@@ -404,17 +322,14 @@ pd.set_option('display.max_colwidth', None)
 pd.set_option('display.max_rows',None)
 
 con = duckdb.connect(utils.DUCKDB_DATABASE) # type: ignore
-con.execute('CREATE SCHEMA IF NOT EXISTS s1')
 
-#con.execute(f"SET extension_directory = '{utils.PATH_EXTENSIONS}';")
-#con.load_extensios(f'{utils.PATH_EXTENSIONS}/v1.1.3/windows_amd64/spatial.duckdb_extension')
 
 file_parquet = ''.join(f'{utils.ENV_BRONZE}/files*.parquet') 
 %load_ext magic_duckdb                                         
 """),
     nbf.v4.new_code_cell(f"""
-con.execute('drop table if exists s1.tbl_file_parquet')
-con.execute(f"create table s1.tbl_file_parquet as select * from '{{file_parquet}}' ")
+con.execute('drop table if exists tbl_file_parquet')
+con.execute(f"create table tbl_file_parquet as select * from '{{file_parquet}}' ")
     """),
     nbf.v4.new_code_cell(f"""
 #-- Utilizando Magic DuckDb

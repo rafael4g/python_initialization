@@ -127,10 +127,11 @@ O script também cria um notebook `duckdb_local.ipynb`, que inicia uma conexão 
 
 ## Requisitos
 - Python 3.7+
-- Pacotes: nbformat, openpyxl, magic_duckdb, sqlalchemy, decouple, pandas, duckdb
+- Pacotes: nbformat, openpyxl, magic_duckdb, sqlalchemy, decouple, pandas, duckdb, pyarrow, ipykernel
 
 ## Contribuição
-Sinta-se à vontade para abrir um Pull Request ou sugerir melhorias para o projeto.
+Sinta-se à vontade para abrir um Pull Request ou sugerir melhorias para o projeto. <br>
+Para amantes de SQL, utilizar a extenxão [Pretty SQL Alias](https://marketplace.visualstudio.com/items?itemName=LinZhang.pretty-sql-alias) ( para formatação dos scripts alinhados com seus ALIAS )
 
 ## Licença
 Este projeto está sob a licença MIT.

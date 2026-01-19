@@ -4,7 +4,7 @@
 	"Duckdb to export": {
 		"prefix": "d_export",
 		"body": [
-			"con.execute(f\"copy s1.tbl_selected to './src/data/tbl_selected.parquet' (format 'parquet', CODEC 'zstd')\")",			
+			"con.execute(f\"copy tbl_selected to './src/data/tbl_selected.parquet' (format 'parquet', CODEC 'zstd')\")",			
 		],
 		"description": "Export table to parquet"
 	},		
@@ -12,8 +12,8 @@
 		"prefix": "d_create",
 		"body": [
 			"q=f\"\"\"",
-			"drop table if exists s1.nome_table;",
-			"create table s1.nome_table as select * from '{ nome_table }'",
+			"drop table if exists nome_table;",
+			"create table nome_table as select * from '{ nome_table }'",
 			"\"\"\"",
 			"con.execute(q)",
 		],
@@ -37,7 +37,7 @@
 		"prefix": "d_describe",
 		"body": [			
 			"q=f\"\"\"",
-			"describe s1.table_name",			
+			"describe table_name",			
 			"\"\"\"",
 			"con.execute(q).fetch_df()",
 		],
@@ -47,7 +47,7 @@
 		"prefix": "d_query",
 		"body": [			
 			"q=f\"\"\"",
-			"select * from s1.table_name",
+			"select * from table_name",
 			"where 1=1",
 			"-- and criterio",
 			"limit 2",
@@ -63,7 +63,7 @@
 			"engine = utils.handle_connect_db('db_historico')",
 			"",
 			"# create dataframe",
-			"df_load= con.execute('from s1.table_name').df()",
+			"df_load= con.execute('from table_name').df()",
 			"",
 			"df_load.to_sql(",
 			"\tname='table_name',",

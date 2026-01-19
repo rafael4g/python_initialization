@@ -83,19 +83,45 @@ O script também cria um notebook `duckdb_local.ipynb`, que inicia uma conexão 
 ## Como executar o script
 
 1. Clone este repositório.
-2. Instale as dependências (caso necessário):
-   ```bash
-   pip install nbformat openpyxl magic_duckdb sqlalchemy python-decouple pandas duckdb
-   ```
+2. Crie um ambiente virtual.
+   ```python
+   # linux
+   ./pasta_do_projeto:~$ python -m venv .venv
 
-3. Execute o script Python:
+   # Windows
+   C:\pasta_do_projeto> python -m venv .venv
+
+   ```
+3. Ative o ambiente   
+   ```python
+   # linux
+   ./pasta_do_projeto:~$ source .venv/bin/activate
+
+   # Windows
+   ./pasta_do_projeto:~$ . .venv/scripts/activate.ps1
+   ```
+4. Instale as dependências (caso necessário):
    ```bash
+   pip install -r requirements.txt
+   ```
+   ##### LIBs
+   - ipykernel ( conexão de notebooks com kernel python )
+   - nbformat ( manipular notebook )
+   - openpyxl ( manipular excel )
+   - magic_duckdb ( para queries amigaveis em duckdb)
+   - sqlalchemy ( para conexão com mysql, postgresql, sql server, etc...)
+   - python-decouple ( para setar variaveis de ambiente )
+   - pandas ( manipulação de dados)
+   - duckdb ( criação de banco de dados local, e manipulação de dados até 50gb)
+   - pyarrow ( para estrutura parquet )
+
+5. Execute o script Python:
+   ```bash
+   # Isso criará a estrutura de pastas, arquivos e o notebook( ``inicial`` ).
     python start.py
     ```
 
-   - Isso criará a estrutura de pastas, arquivos e o notebook.
-
-4. Magic DuckDB
+6. Magic DuckDB ( Adcional )
    - Extenção para manipulação de sql utilizando a expressão %%dql no inicio da celula do notebook
    - Utilizamos no próprio banco local com a flag `%%dql -co -con`
       - `-co` para conexão em variavel de conexão ao banco de dados.
@@ -112,22 +138,23 @@ O script também cria um notebook `duckdb_local.ipynb`, que inicia uma conexão 
    from duckdb_tables() a
    ```
 
-5. Extensões para Duckdb
-   - baixe conforme sua versão, neste projeto v1.1.3
+7. Extensões para Duckdb ( Adcional )
+   - baixe conforme sua versão, neste projeto v1.4.3
    ```bash
    # baixe o zip no site abaixo
-   http://extensions.duckdb.org/v1.1.3/windows_amd64/spatial.duckdb_extension.gz
+   http://extensions.duckdb.org/v1.4.3/windows_amd64/spatial.duckdb_extension.gz
 
    # Ou Instale diretamente com o comando abaixo, direto da celula do notebook
    con.execute('INSTALL spatial')
    con.execute('LOAD spatial')
    ```
 
-6. Abra o notebook duckdb_local.ipynb no Jupyter e execute as células para manipulação do banco de dados DuckDB.
+8. Abra o notebook duckdb_local.ipynb no Jupyter e execute as células para manipulação do banco de dados DuckDB.
 
 ## Requisitos
 - Python 3.7+
 - Pacotes: nbformat, openpyxl, magic_duckdb, sqlalchemy, decouple, pandas, duckdb, pyarrow, ipykernel
+- versões no arquivo requirements.txt
 
 ## Contribuição
 Sinta-se à vontade para abrir um Pull Request ou sugerir melhorias para o projeto. <br>

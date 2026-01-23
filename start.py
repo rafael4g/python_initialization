@@ -59,6 +59,9 @@ from typing import List
 from sqlalchemy import create_engine, text
 from unicodedata import normalize
 from datetime import datetime
+from pathlib import Path  
+from zoneinfo import ZoneInfo # Python 3.9+
+import pandas as pd
 import re
 import os
 import hashlib
@@ -339,8 +342,8 @@ con.execute('drop table if exists tbl_file_parquet')
 con.execute(f"create table tbl_file_parquet as select * from '{{file_parquet}}' ")
     """),
     nbf.v4.new_code_cell(f"""
-#-- Utilizando Magic DuckDb
 %%dql -co con 
+--# Utilizando Magic DuckDb
 select 
     a.database_name
     , a.table_name

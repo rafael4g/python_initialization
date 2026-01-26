@@ -20,34 +20,36 @@ O script cria a seguinte estrutura de diretórios:
 ├── .vscode/ \
 │ └── settings.json \
 ├── src/ \
-│ ├── init.py \
+│ ├── __init__.py \
 │ ├── bucket/ \
 │ │ ├── bronze/ \
-│ │ │ ├── csv/ \
-│ │ │ │ └── .gitkeep \
-│ │ │ ├── excel/ \
-│ │ │ │ └── .gitkeep \
+│ │ │ └── .gitkeep \
 │ │ ├── silver/ \
 │ │ │ └── .gitkeep \
 │ │ └── gold/ \
 │ │ └── .gitkeep \
 │ ├── database/ \
 │ │ └── .gitkeep \
-│ ├── models/ \
-│ │ ├── marts/ \
-│ │ │ └── init.py \
-│ │ ├── sources/ \
-│ │ │ └── init.py \
-│ │ ├── staging/ \
-│ │ │ ├── init.py \
-│ │ │ ├── query.py \
-│ │ │ ├── create.py \
-│ │ │ └── update.py \
 │ ├── utils/ \
-│ └── init.py \
+│ └ └── __init__.py \
 ├── .env \
 └── duckdb_local.ipynb
 
+```python
+# Para modularização de pastas
+__init__.py
+
+# Funções em ./utils, breve descrição
+def check_folder_exists(path_check: str) -> str: ... # criar pasta se nao existe
+def handle_conect_db(_mysql_db_name: str) -> create_engine: ... # conexao com mysql/mariadb( usada para desenvolvimento )
+def handle_strip_string(str1_in: str) -> str: ... # remove objetos não visiveis no texto, e cria saida em formato md5
+def handle_normalize_strings(in_string: str) -> str: ... # normaliza cabecalhos de dataframe, padrao, snake_case
+def handle_parse_dt(value, tipo_tz="America/Sao_Paulo"): ... # padroniza datas no formato padrao: YYYY-MM-DD HH:MM:SS
+def handle_headers_comparation(_header_list: List[str], _header_original: List[str]) -> List[str]: ... # compara e adcionando colunas faltantes ao dataset original
+def handle_ymonth(_dt: datetime) -> int: ... # cria formato YYYYMM ( ANOMES )
+def parse_xml_records(xml_path: Path, record_tag: str) -> pd.DataFrame: ... # conversão de arquivo xml para pandas dataframe com record_tag especifico
+def save_to_parquet(df: pd.DataFrame, out_path: str) -> None: ... # convert pandas dataframe em .parquet
+```
 
 ### 2. Variáveis de ambiente
 
@@ -57,13 +59,13 @@ PATH_ROOT=./src \
 PATH_BUCKET=./src/bucket \
 PATH_EXTENSIONS=./src/extensions \
 ENV_BRONZE=./src/bucket/bronze \
+ENV_SILVER=./src/bucket/silver \
+ENV_GOLD=./src/bucket/gold \
 MYSQL_USER=usuario \
 MYSQL_PASS=password \
 MYSQL_HOST=localhost \
 MYSQL_PORT=3306 \
-MYSQL_DEFAULT_DB=information_schema\
 DUCKDB_DATABASE=./src/database/db_local.duckdb
-
 
 
 Você pode ajustar as variáveis de acordo com seu ambiente.
@@ -108,12 +110,14 @@ O script também cria um notebook `duckdb_local.ipynb`, que inicia uma conexão 
    - ipykernel ( conexão de notebooks com kernel python )
    - nbformat ( manipular notebook )
    - openpyxl ( manipular excel )
-   - magic_duckdb ( para queries amigaveis em duckdb)
-   - sqlalchemy ( para conexão com mysql, postgresql, sql server, etc...)
+   - magic_duckdb ( para queries amigaveis em duckdb )
+   - mysql-connector ( para conexão com mysql/mariaDb )
+   - numpy ( para funções matemáticas )
+   - sqlalchemy ( para conexão com diversos bancos de dados como mysql, postgresql, sql server, etc... )
    - python-decouple ( para setar variaveis de ambiente )
-   - pandas ( manipulação de dados)
-   - duckdb ( criação de banco de dados local, e manipulação de dados até 50gb)
+   - pandas ( manipulação de dados )
    - pyarrow ( para estrutura parquet )
+   - duckdb ( criação de banco de dados local, e manipulação de dados até 50gb )
 
 5. Execute o script Python:
    ```bash
@@ -152,7 +156,7 @@ O script também cria um notebook `duckdb_local.ipynb`, que inicia uma conexão 
 8. Abra o notebook duckdb_local.ipynb no Jupyter e execute as células para manipulação do banco de dados DuckDB.
 
 ## Requisitos
-- Python 3.7+
+- Python 3.10+
 - Pacotes: nbformat, openpyxl, magic_duckdb, sqlalchemy, decouple, pandas, duckdb, pyarrow, ipykernel
 - versões no arquivo requirements.txt
 

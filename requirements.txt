@@ -1,5 +1,6 @@
 # setuptools==65.5.0 # arquitetura
 duckdb==1.4.3
+ipykernel==7.1.0
 magic_duckdb==0.2.4
 mysql-connector==2.2.9
 nbformat==5.10.4

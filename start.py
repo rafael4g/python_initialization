@@ -214,6 +214,7 @@ if __name__ == '__main__':
             init_file_env.write("""\
 PATH_ROOT=./src
 PATH_BUCKET=./src/bucket
+PATH_EXTENSIONS=./src/extensions
 ENV_BRONZE=./src/bucket/bronze
 ENV_SILVER=./src/bucket/silver
 ENV_GOLD=./src/bucket/gold

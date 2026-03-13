@@ -55,22 +55,27 @@ def criar_pasta_template(base_path):
     if not os.path.exists(init_file_path):
         with open(init_file_path, 'w') as init_file:
             init_file.write("""\
-from typing import List
+import os
+import re
+from typing import List, Dict
+from zoneinfo import ZoneInfo # Python 3.9+
 from sqlalchemy import create_engine, text
 from unicodedata import normalize
 from datetime import datetime
 from pathlib import Path  
-from zoneinfo import ZoneInfo # Python 3.9+
+import xml.etree.ElementTree as ET
 import pandas as pd
-import re
-import os
 import hashlib
+import mysql.connector
 from decouple import config
 
 MYSQL_USER = config('MYSQL_USER')
 MYSQL_PASS = config('MYSQL_PASS')
 MYSQL_HOST = config('MYSQL_HOST')
 MYSQL_PORT = config('MYSQL_PORT')
+HOST_LOC = config('HOST_LOC')
+USER_LOC = config('USER_LOC')
+PASS_LOC = config('PASS_LOC')
 PATH_BUCKET = config('PATH_BUCKET')
 ENV_BRONZE = config('ENV_BRONZE')
 ENV_SILVER = config('ENV_SILVER')
@@ -78,7 +83,148 @@ ENV_GOLD = config('ENV_GOLD')
 DUCKDB_DATABASE = config('DUCKDB_DATABASE')
                             
 DATETIME_HOUR_MINUTES = datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S")
+                            
+dict_env_default = {
+    'usr': USER_LOC
+    , 'pwd': PASS_LOC
+    , 'hst': HOST_LOC
+    , 'prt': 3306
+}
 
+
+def connect_to_mysql(_db_name: str, _dict_env: Dict | None = dict_env_default) -> mysql.connector:
+    # conectando ao mysql/mariadb lib: mysql.connector
+
+    config_mysql = {
+    'user': _dict_env['usr'],
+    'password': _dict_env['pwd'],
+    'host': _dict_env['hst'],
+    'database': _db_name,   
+    'port': _dict_env['prt'], 
+    'allow_local_infile': True,
+    }
+    
+    conn = mysql.connector.connect(**config_mysql)
+        
+    return conn
+
+def load_data_to_mysql(_file_path: str, _table_name: str, _columns_default: list[str] | None) -> str:
+    # Criar padrao para load data infile
+
+    colunas_str = ', '.join(_columns_default)
+    table_name_correct =  _table_name
+    
+    load_data_sql = f'''
+    LOAD DATA LOCAL INFILE '{_file_path}'
+    INTO TABLE {table_name_correct}
+    CHARACTER SET utf8mb4
+    FIELDS TERMINATED BY ';' ENCLOSED BY '"'
+    LINES TERMINATED BY '\\n'
+    IGNORE 1 LINES
+    ({colunas_str});
+    '''    
+
+    return load_data_sql
+
+
+def handle_mysql_local_delete( _db_destino: str, _table_name: str, _name_col_delete: str = '', _period: int = 0, _dict_credentials= Dict ) -> str:
+    ### Deleta a tabela com base na variavel _name_col_delete.
+    # Parametros
+    #---------
+    # _db_destino: str          Nome do banco de dados destino
+    # _table_name: str          Nome da tabela destino
+    # _name_col_delete: str     Nome da coluna utilizada para o criterio de delete, caso seja necessario
+    # _period: int              Periodo para filtrar os registros a serem excluidos
+    # _dict_credentials: Dict   Dicionario com as credenciais de acesso ao banco de dados
+    #---------
+    # Retorna: Apenas mensagem de sucesso ou error!
+
+    if not(_dict_credentials):
+        _dict_credentials = dict_env_default
+        
+    if _period == 0:
+        query_delete__carga = f'truncate table {_table_name}' 
+    else:        
+        query_delete__carga = f'DELETE FROM {_table_name} WHERE {_name_col_delete} = {_period}' 
+    
+    conn = connect_to_mysql(_db_destino, _dict_env=_dict_credentials)
+    cursor = conn.cursor(buffered=True)
+    try:    
+        # Executar o comando TRUNCATE TABLE  
+        cursor.execute('SET FOREIGN_KEY_CHECKS = 0;')     
+        cursor.execute(query_delete__carga) 
+        cursor.execute('SET FOREIGN_KEY_CHECKS = 1;')
+        # print(f'Delete removido da função, utilizada para critério incremetal')   
+        conn.commit()
+        output_str = f'Tabela {_table_name} limpa com sucesso!'
+        cursor.close()
+        conn.close()
+
+    except mysql.connector.Error as err:
+        output_str = f'Erro: {err}'
+        print(output_str)
+    finally:
+        # Fechar o cursor e a conexao
+        cursor.close()
+        conn.close()
+        
+    return output_str
+
+
+def handle_update_csv_to_mysql(_db_destino: str, _table_name: str, _load_data_sql: str, _dict_credentials= Dict) -> str:
+    # realiza update do arquivo recebido com load_data_sql ja configurado
+    # -- print(query_delete_to_mysql)
+    print(f'Conectando ao banco de dados: {_db_destino} ')
+
+    if not(_dict_credentials):
+        _dict_credentials = dict_env_default
+
+    conn = connect_to_mysql(_db_destino, _dict_env=_dict_credentials)
+    cursor = conn.cursor(buffered=True)    
+
+    try:           
+        print(f"Iniciando nova carga em {_table_name}.")   
+        # Executar o comando LOAD DATA INFILE
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 0;")
+        cursor.execute("SET unique_checks = 0;")           
+        cursor.execute(_load_data_sql)      
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 1;")      
+        cursor.execute("SET unique_checks = 1;")   
+            
+        # Confirmar a transação
+        conn.commit()
+        output_str = "Dados importados com sucesso!"
+   
+        cursor.close()
+        conn.close()
+        
+    except mysql.connector.Error as err:
+        output_str = f"Erro: {err}"
+        print(output_str)
+    finally:
+        # Fechar o cursor e a conexão
+        cursor.close()
+        conn.close()
+        
+    return output_str
+
+def handle_load_csv_to_mysql(_file_path: str, _table_name: str, _db_destino: str, _dict_credentials: Dict, _columns_default= list[str] ) -> str:
+
+    # Criando string para load data infile
+    load_data_sql = load_data_to_mysql(_file_path=_file_path
+											, _table_name=_table_name
+                                            , _columns_default=_columns_default
+                                    		)
+	# Executando load data infile
+    lines_updated = handle_update_csv_to_mysql( _db_destino=_db_destino
+                                                      , _table_name=_table_name
+													  , _load_data_sql=load_data_sql      
+                                                      , _dict_credentials=_dict_credentials                                         
+                                               	)
+    
+    return lines_updated
+
+# =========================================================================== #    
 # verifica se exite pasta, do contrario cria a pasta
 def check_folder_exists(path_check: str) -> str:
     # -- Criar pasta se nao existe
@@ -97,8 +243,8 @@ def handle_conect_db(_mysql_db_name: str) -> create_engine:
     return engine
 
 # remove objetos invisiveis no texto, e cria saida em formato md5
-def handle_strip_string(str1_in: str) -> str:
-    # -- Função para remover objetos de strings
+def handle_strip_string_md5(str1_in: str) -> str:
+    # -- Funcao para remover objetos de strings
     # -- str1_in: string de entrada
  
     convert_string = str(str1_in)
@@ -109,7 +255,6 @@ def handle_strip_string(str1_in: str) -> str:
 
 # normaliza cabecalhos de dataframe, padrao, snake_case
 def handle_normalize_strings(in_string: str) -> str:
-    # -- handle_normalize_strings
     # -- Remove caracteres especiais, e replace nos caracteres .()/|-,
                             
     target = normalize('NFKD', in_string).encode('ASCII','ignore').decode('ASCII')
@@ -153,7 +298,7 @@ def handle_parse_dt(value, tipo_tz="America/Sao_Paulo"):
                       
 # comparando e adcionando colunas faltantes ao dataset original
 def handle_headers_comparation(_header_list: List[str], _header_original: List[str]) -> List[str]:
-    # Função que adciona coluna faltante 
+    # Funcao que adciona coluna faltante 
     #---
     #`variables`:
 
@@ -179,9 +324,9 @@ def handle_ymonth(_dt: datetime) -> int:
 
 # conversao de arquivo xml para pandas dataframe
 def parse_xml_records(xml_path: Path, record_tag: str) -> pd.DataFrame:
-    # Lê um XML com estrutura de <record_tag> contendo múltiplos <Field name="...">valor</Field>.
+    # Le um XML com estrutura de <record_tag> contendo multiplos <Field name="...">valor</Field>.
     # Retorna DataFrame com colunas = 'name' e valores = text.
-    # Alguns arquivos têm raiz adicional; usamos findall diretamente.
+    # Alguns arquivos tem raiz adicional; usamos findall diretamente.
     
     tree = ET.parse(xml_path)
     records = tree.findall(record_tag)
@@ -198,7 +343,7 @@ def parse_xml_records(xml_path: Path, record_tag: str) -> pd.DataFrame:
 # salva o pandas dataframe em .parquet, por isso a necessidade da lib pyarrow
 def save_to_parquet(df: pd.DataFrame, out_path: str) -> None:
     # Salva DataFrame em parquet.
-    df.to_parquet(out_path, compression='snappy', engine='pyarrow')
+    df.to_parquet(out_path, compression='snappy', engine='pyarrow')                         
 
 if __name__ == '__main__':
     print('Teste - ok!')
@@ -222,6 +367,10 @@ MYSQL_USER=usuario
 MYSQL_PASS=password
 MYSQL_HOST=localhost
 MYSQL_PORT=3306
+HOST_LOC=localhost
+USER_LOC=usuario01
+PASS_LOC=usuario01
+PORT_LOC=3306
 DUCKDB_DATABASE=./src/database/db_local.duckdb
 
 """)
@@ -257,6 +406,10 @@ DUCKDB_DATABASE=./src/database/db_local.duckdb
     "workbench.iconTheme": "material-icon-theme",   
     "workbench.colorTheme": "Dracula Theme",
     "workbench.tree.indent": 18,
+    // referente a jupyter notebook, localizar .venv para o projeto
+    "python.terminal.activateEnvironment": true,
+    "jupyter.jupyterServerType": "local",
+    "jupyter.askForKernelRestart": false,
     // =================== CONFIG: arquivos e pastas ===================
     "files.autoSaveDelay": 50000, // <== Salvar automaticamente
     // terminal

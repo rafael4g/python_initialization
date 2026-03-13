@@ -41,14 +41,19 @@ __init__.py
 
 # Funções em ./utils, breve descrição
 def check_folder_exists(path_check: str) -> str: ... # criar pasta se nao existe
-def handle_conect_db(_mysql_db_name: str) -> create_engine: ... # conexao com mysql/mariadb( usada para desenvolvimento )
-def handle_strip_string(str1_in: str) -> str: ... # remove objetos não visiveis no texto, e cria saida em formato md5
-def handle_normalize_strings(in_string: str) -> str: ... # normaliza cabecalhos de dataframe, padrao, snake_case
+def handle_conect_db(_mysql_db_name: str) -> create_engine: ... # conexao com mysql/mariadb( lib: sqlalchemy )
+def handle_strip_string_md5(str1_in: str) -> str: ... # remove objetos não visiveis no texto, e cria saida em formato md5
+def handle_normalize_strings(in_string: str) -> str: ... # normaliza cabecalhos de dataframe, padrao, snake_case e remove caracteres especiais
 def handle_parse_dt(value, tipo_tz="America/Sao_Paulo"): ... # padroniza datas no formato padrao: YYYY-MM-DD HH:MM:SS
 def handle_headers_comparation(_header_list: List[str], _header_original: List[str]) -> List[str]: ... # compara e adcionando colunas faltantes ao dataset original
 def handle_ymonth(_dt: datetime) -> int: ... # cria formato YYYYMM ( ANOMES )
 def parse_xml_records(xml_path: Path, record_tag: str) -> pd.DataFrame: ... # conversão de arquivo xml para pandas dataframe com record_tag especifico
 def save_to_parquet(df: pd.DataFrame, out_path: str) -> None: ... # convert pandas dataframe em .parquet
+def connect_to_mysql(_db_name: str, _dict_env: Dict | None = dict_env_default) -> mysql.connector: ... # conexao com mysql/mariadb( lib: mysql.connector )
+def load_data_to_mysql(_file_path: str, _table_name: str, _columns_default: list[str] | None) -> str: ... # cria padrão para load data infile
+def handle_mysql_local_delete(_db_destino: str, _table_name: str, _name_col_delete: str = '', _period: int = 0, _dict_credentials= Dict ) -> str: ... # delete ou trunca tabela
+def handle_update_csv_to_mysql(_db_destino: str, _table_name: str, _load_data_sql: str, _dict_credentials= Dict) -> str: ... # realiza o load data infile
+def handle_load_csv_to_mysql(_file_path: str, _table_name: str, _db_destino: str, _dict_credentials: Dict, _columns_default= list[str] ) -> str: ... # encapsula 2 funções[ load_data_to_mysql, handle_update_csv_to_mysql ]
 ```
 
 ### 2. Variáveis de ambiente
@@ -118,6 +123,9 @@ O script também cria um notebook `duckdb_local.ipynb`, que inicia uma conexão 
    - pandas ( manipulação de dados )
    - pyarrow ( para estrutura parquet )
    - duckdb ( criação de banco de dados local, e manipulação de dados até 50gb )
+   - pyyaml ( leitura de arquivos .yaml)
+   - xlsxwriter ( manipulação de excel)
+   - openpyxl ( propriedade para manipulação de excel)
 
 5. Execute o script Python:
    ```bash
